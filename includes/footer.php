@@ -1,6 +1,9 @@
-    <footer class="bg-dark text-white text-center py-4 mt-auto">
+        </div> <!-- End Content Area -->
+    </div> <!-- End Main Layout Wrapper -->
+
+    <footer class="bg-dark text-white text-center py-4 mt-auto w-100 border-top border-secondary">
         <div class="container">
-            <p class="mb-0">&copy; <?php echo date("Y"); ?> AutoRental. All Rights Reserved.</p>
+            <p class="mb-0 text-muted">&copy; <?php echo date("Y"); ?> AutoRental. All Rights Reserved.</p>
         </div>
     </footer>
     
