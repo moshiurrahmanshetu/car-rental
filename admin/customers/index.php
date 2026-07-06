@@ -2,10 +2,31 @@
 session_start();
 require '../../config/db.php';
 
-// Check if user is logged in and has access (admin or staff)
+// Check if user is logged in and has access
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['admin', 'staff'])) {
     header("Location: ../../login.php");
     exit;
+}
+
+$error = '';
+
+// Handle Delete Request
+if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
+    $delete_id = $_GET['delete'];
+    
+    // Prepare delete statement
+    if ($stmt = $conn->prepare("DELETE FROM customers WHERE id = ?")) {
+        $stmt->bind_param("i", $delete_id);
+        if ($stmt->execute()) {
+            header("Location: index.php?success=deleted");
+            exit;
+        } else {
+            $error = "Failed to delete customer. Ensure they are not linked to active bookings.";
+        }
+        $stmt->close();
+    } else {
+        $error = "Database error processing deletion.";
+    }
 }
 
 // Fetch all customers from the database
@@ -22,10 +43,29 @@ $result = $conn->query("SELECT * FROM customers ORDER BY id DESC");
         </div>
     </div>
 
-    <!-- Success Message Alert -->
-    <?php if (isset($_GET['success']) && $_GET['success'] === 'true'): ?>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            Customer added successfully!
+    <!-- Feedback Messages -->
+    <?php if (isset($_GET['success'])): ?>
+        <?php if ($_GET['success'] === 'true'): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                Customer added successfully!
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php elseif ($_GET['success'] === 'update'): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                Customer updated successfully!
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php elseif ($_GET['success'] === 'deleted'): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                Customer deleted successfully!
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+    <?php endif; ?>
+    
+    <?php if (!empty($error)): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <?php echo htmlspecialchars($error); ?>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     <?php endif; ?>
@@ -62,9 +102,12 @@ $result = $conn->query("SELECT * FROM customers ORDER BY id DESC");
                                     </td>
                                     <td><?php echo date('M d, Y H:i', strtotime($row['created_at'])); ?></td>
                                     <td>
-                                        <!-- Actions are placeholders for now -->
-                                        <a href="#" class="btn btn-sm btn-outline-primary">Edit</a>
-                                        <a href="#" class="btn btn-sm btn-outline-danger">Delete</a>
+                                        <a href="edit.php?id=<?php echo $row['id']; ?>" class="btn btn-sm btn-outline-primary">Edit</a>
+                                        <a href="index.php?delete=<?php echo $row['id']; ?>" 
+                                           class="btn btn-sm btn-outline-danger" 
+                                           onclick="return confirm('Are you sure you want to delete this customer? This action cannot be undone.');">
+                                            Delete
+                                        </a>
                                     </td>
                                 </tr>
                             <?php endwhile; ?>
