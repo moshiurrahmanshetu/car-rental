@@ -8,6 +8,73 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['admin', 
     exit;
 }
 
+$error = '';
+
+// Handle Delete Request
+if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
+    $delete_id = $_GET['delete'];
+    $can_delete = true;
+
+    // Step 1: Check car status (only allow delete if status = available)
+    $status_stmt = $conn->prepare("SELECT status FROM cars WHERE id = ?");
+    $status_stmt->bind_param("i", $delete_id);
+    $status_stmt->execute();
+    $status_result = $status_stmt->get_result();
+
+    if ($status_result->num_rows === 0) {
+        $error = "Car not found.";
+        $can_delete = false;
+    } else {
+        $car_row = $status_result->fetch_assoc();
+        $car_status = $car_row['status'];
+
+        if (in_array($car_status, ['booked', 'rented', 'maintenance'])) {
+            $error = "Car cannot be deleted because its current status is <strong>" . ucfirst(htmlspecialchars($car_status)) . "</strong>. Only available cars can be deleted.";
+            $can_delete = false;
+        }
+    }
+    $status_stmt->close();
+
+    // Step 2: Check if car is linked to any bookings
+    if ($can_delete) {
+        $booking_stmt = $conn->prepare("SELECT COUNT(*) as count FROM bookings WHERE car_id = ?");
+        $booking_stmt->bind_param("i", $delete_id);
+        $booking_stmt->execute();
+        $booking_result = $booking_stmt->get_result()->fetch_assoc();
+        if ($booking_result['count'] > 0) {
+            $error = "Car cannot be deleted because it is linked to <strong>" . $booking_result['count'] . " booking(s)</strong> in the system.";
+            $can_delete = false;
+        }
+        $booking_stmt->close();
+    }
+
+    // Step 3: Check if car is linked to any rentals (via bookings)
+    if ($can_delete) {
+        $rental_stmt = $conn->prepare("SELECT COUNT(*) as count FROM rentals r JOIN bookings b ON r.booking_id = b.id WHERE b.car_id = ?");
+        $rental_stmt->bind_param("i", $delete_id);
+        $rental_stmt->execute();
+        $rental_result = $rental_stmt->get_result()->fetch_assoc();
+        if ($rental_result['count'] > 0) {
+            $error = "Car cannot be deleted because it has an active or past <strong>rental record</strong> in the system.";
+            $can_delete = false;
+        }
+        $rental_stmt->close();
+    }
+
+    // Step 4: All checks passed — proceed with deletion
+    if ($can_delete) {
+        $del_stmt = $conn->prepare("DELETE FROM cars WHERE id = ?");
+        $del_stmt->bind_param("i", $delete_id);
+        if ($del_stmt->execute()) {
+            header("Location: index.php?success=deleted");
+            exit;
+        } else {
+            $error = "Unexpected error occurred while deleting the car. Please try again.";
+        }
+        $del_stmt->close();
+    }
+}
+
 // Fetch all cars with JOINs for category and brand names
 $query = "
     SELECT c.*, b.name AS brand_name, cat.name AS category_name 
@@ -29,10 +96,29 @@ $result = $conn->query($query);
         </div>
     </div>
 
-    <!-- Success Message Alert -->
-    <?php if (isset($_GET['success']) && $_GET['success'] === 'true'): ?>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            Car added successfully!
+    <!-- Feedback Messages -->
+    <?php if (isset($_GET['success'])): ?>
+        <?php if ($_GET['success'] === 'true'): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                Car added successfully!
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php elseif ($_GET['success'] === 'update'): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                Car updated successfully!
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php elseif ($_GET['success'] === 'deleted'): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                Car deleted successfully!
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+    <?php endif; ?>
+
+    <?php if (!empty($error)): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <?php echo $error; ?>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     <?php endif; ?>
@@ -83,8 +169,12 @@ $result = $conn->query($query);
                                         <span class="badge <?php echo $badge; ?>"><?php echo ucfirst($row['status']); ?></span>
                                     </td>
                                     <td>
-                                        <a href="#" class="btn btn-sm btn-outline-primary">Edit</a>
-                                        <a href="#" class="btn btn-sm btn-outline-danger">Delete</a>
+                                        <a href="edit.php?id=<?php echo $row['id']; ?>" class="btn btn-sm btn-outline-primary">Edit</a>
+                                        <a href="index.php?delete=<?php echo $row['id']; ?>" 
+                                           class="btn btn-sm btn-outline-danger" 
+                                           onclick="return confirm('Are you sure you want to delete this car? This action cannot be undone.');">
+                                            Delete
+                                        </a>
                                     </td>
                                 </tr>
                             <?php endwhile; ?>
