@@ -2,11 +2,8 @@
 session_start();
 require '../config/db.php';
 
-// Check if user is logged in and has admin role
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
-    header("Location: ../login.php");
-    exit;
-}
+require_once '../includes/auth_check.php';
+require_staff_or_admin();
 
 // Initialize stats array
 $stats = [
@@ -45,7 +42,7 @@ if ($book_res && $row = $book_res->fetch_assoc()) {
 }
 
 // 4. Monthly Income
-$income_res = $conn->query("SELECT SUM(amount) as income FROM payments WHERE MONTH(payment_date) = MONTH(CURDATE()) AND YEAR(payment_date) = YEAR(CURDATE())");
+$income_res = $conn->query("SELECT SUM(amount) as income FROM payments WHERE MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())");
 if ($income_res && $row = $income_res->fetch_assoc()) {
     $stats['monthly_income'] = $row['income'] ?? 0;
 }

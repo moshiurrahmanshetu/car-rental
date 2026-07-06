@@ -70,10 +70,13 @@ $current_dir = basename(dirname($_SERVER['PHP_SELF']));
     <!-- Main Layout Wrapper -->
     <div class="d-flex flex-column flex-md-row flex-grow-1">
         
-        <?php if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'admin'): ?>
-            <!-- Admin Sidebar -->
+        <?php 
+        $user_role = $_SESSION['user_role'] ?? $_SESSION['role'] ?? '';
+        if (isset($_SESSION['user_id']) && in_array($user_role, ['admin', 'staff'])): 
+        ?>
+            <!-- Sidebar -->
             <div class="bg-dark text-white p-3 admin-sidebar" style="width: 250px; flex-shrink: 0;">
-                <h6 class="mb-4 text-center text-uppercase text-muted fw-bold border-bottom pb-2">Admin Menu</h6>
+                <h6 class="mb-4 text-center text-uppercase text-muted fw-bold border-bottom pb-2">Menu</h6>
                 <ul class="nav flex-column gap-1">
                     <li class="nav-item">
                         <a href="/car-rental/admin/dashboard.php" class="nav-link text-white rounded <?php echo ($current_page == 'dashboard.php') ? 'bg-primary' : ''; ?>">
@@ -92,7 +95,7 @@ $current_dir = basename(dirname($_SERVER['PHP_SELF']));
                         <a href="/car-rental/admin/bookings/index.php" class="nav-link text-white rounded <?php echo ($current_dir == 'bookings') ? 'bg-primary' : ''; ?>">Bookings</a>
                     </li>
                     <li class="nav-item">
-                        <a href="#" class="nav-link text-white rounded">Payments</a>
+                        <a href="/car-rental/admin/payments/list.php" class="nav-link text-white rounded <?php echo ($current_dir == 'payments') ? 'bg-primary' : ''; ?>">Payments</a>
                     </li>
                     <li class="nav-item">
                         <a href="#" class="nav-link text-white rounded">Reports</a>
@@ -100,6 +103,11 @@ $current_dir = basename(dirname($_SERVER['PHP_SELF']));
                     <li class="nav-item">
                         <a href="#" class="nav-link text-white rounded">Settings</a>
                     </li>
+                    <?php if ($user_role === 'admin'): ?>
+                        <li class="nav-item">
+                            <a href="/car-rental/admin/staff/index.php" class="nav-link text-white rounded <?php echo ($current_dir == 'staff') ? 'bg-primary' : ''; ?>">Staff Management</a>
+                        </li>
+                    <?php endif; ?>
                 </ul>
             </div>
         <?php endif; ?>

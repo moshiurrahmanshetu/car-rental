@@ -1,12 +1,7 @@
 <?php
-session_start();
-require '../../config/db.php';
-
-// Security check
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['admin', 'staff'])) {
-    header("Location: ../../login.php");
-    exit;
-}
+require_once '../../includes/auth_check.php';
+require_staff_or_admin();
+require_once '../../config/db.php';
 
 // Validate ID
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
@@ -64,8 +59,16 @@ $badge_class = $status_badges[$rental['status']] ?? 'bg-secondary';
             <h2 class="mb-0">Rental Details</h2>
             <small class="text-muted">Booking: <strong><?php echo htmlspecialchars($rental['booking_no']); ?></strong></small>
         </div>
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
             <span class="badge <?php echo $badge_class; ?> fs-6"><?php echo ucfirst($rental['status']); ?></span>
+            <a href="/car-rental/admin/invoices/view.php?rental_id=<?php echo $rental_id; ?>"
+               class="btn btn-outline-primary">
+                🧾 Invoice
+            </a>
+            <a href="/car-rental/admin/payments/create.php?rental_id=<?php echo $rental_id; ?>"
+               class="btn btn-success">
+                💵 Collect Payment
+            </a>
             <?php if ($rental['status'] === 'running' && !$ret_record): ?>
                 <a href="/car-rental/admin/returns/create.php?rental_id=<?php echo $rental_id; ?>"
                    class="btn btn-danger">
