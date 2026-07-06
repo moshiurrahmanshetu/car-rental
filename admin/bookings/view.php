@@ -91,11 +91,32 @@ $badge_class = $status_badges[$bk['status']] ?? 'bg-secondary';
             <h2 class="mb-0">Booking Details</h2>
             <small class="text-muted">Reference: <strong><?php echo htmlspecialchars($bk['booking_no']); ?></strong></small>
         </div>
-        <div>
-            <span class="badge <?php echo $badge_class; ?> fs-6 me-2"><?php echo ucfirst($bk['status']); ?></span>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge <?php echo $badge_class; ?> fs-6"><?php echo ucfirst($bk['status']); ?></span>
+            <?php if ($bk['status'] === 'confirmed' && !$rental): ?>
+                <a href="/car-rental/admin/rentals/start.php?booking_id=<?php echo $bk['id']; ?>"
+                   class="btn btn-success">
+                    ▶ Start Rental
+                </a>
+            <?php endif; ?>
             <a href="index.php" class="btn btn-outline-secondary">Back to List</a>
         </div>
     </div>
+
+    <!-- Feedback Alerts -->
+    <?php if (isset($_GET['success']) && $_GET['success'] === 'rental_started'): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <strong>Rental started successfully!</strong> Booking is now marked as Running and car is Rented.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+    <?php if (isset($_GET['error'])): ?>
+        <?php $err_msgs = ['not_confirmed' => 'This booking is not in Confirmed status. Rental can only be started for confirmed bookings.', 'already_started' => 'A rental has already been started for this booking.']; ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <?php echo htmlspecialchars($err_msgs[$_GET['error']] ?? 'An error occurred.'); ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
 
     <div class="row g-4">
         <!-- LEFT COLUMN -->
