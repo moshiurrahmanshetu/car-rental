@@ -89,7 +89,7 @@ $current_dir = basename(dirname($_SERVER['PHP_SELF']));
                         <a href="/car-rental/admin/cars/index.php" class="nav-link text-white rounded <?php echo ($current_dir == 'cars') ? 'bg-primary' : ''; ?>">Cars</a>
                     </li>
                     <li class="nav-item">
-                        <a href="#" class="nav-link text-white rounded">Bookings</a>
+                        <a href="/car-rental/admin/bookings/index.php" class="nav-link text-white rounded <?php echo ($current_dir == 'bookings') ? 'bg-primary' : ''; ?>">Bookings</a>
                     </li>
                     <li class="nav-item">
                         <a href="#" class="nav-link text-white rounded">Payments</a>
