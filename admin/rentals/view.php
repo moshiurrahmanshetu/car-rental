@@ -45,6 +45,21 @@ $ret_stmt->execute();
 $ret_record = $ret_stmt->get_result()->fetch_assoc();
 $ret_stmt->close();
 
+// ── Live payment summary ──────────────────────────────────────────────────────
+$return_charges = $ret_record
+    ? (floatval($ret_record['late_fee']) + floatval($ret_record['damage_fee'])
+       + floatval($ret_record['fuel_charge']) + floatval($ret_record['other_charge']))
+    : 0;
+$total_rent_due = floatval($rental['total']) + $return_charges;
+
+$pay_sum_stmt = $conn->prepare("SELECT COALESCE(SUM(amount),0) AS paid FROM payments WHERE rental_id = ?");
+$pay_sum_stmt->bind_param("i", $rental_id);
+$pay_sum_stmt->execute();
+$pay_sum = $pay_sum_stmt->get_result()->fetch_assoc();
+$pay_sum_stmt->close();
+$total_paid_live  = floatval($pay_sum['paid']);
+$balance_due_live = max(0, $total_rent_due - $total_paid_live);
+
 $status_badges = [
     'running'   => 'bg-info text-dark',
     'completed' => 'bg-success',
@@ -165,7 +180,7 @@ $badge_class = $status_badges[$rental['status']] ?? 'bg-secondary';
             </div>
 
             <!-- Booking Summary -->
-            <div class="card shadow-sm border-0">
+            <div class="card shadow-sm border-0 mb-4">
                 <div class="card-header bg-white fw-bold py-3">Booking Summary</div>
                 <div class="card-body">
                     <table class="table table-sm mb-0">
@@ -173,9 +188,44 @@ $badge_class = $status_badges[$rental['status']] ?? 'bg-secondary';
                         <tr><td class="text-muted">Rate</td><td class="text-end">$<?php echo number_format($rental['rent_rate'], 2); ?></td></tr>
                         <tr><td class="text-muted">Discount</td><td class="text-end text-danger">-$<?php echo number_format($rental['discount'], 2); ?></td></tr>
                         <tr><td class="text-muted">Tax</td><td class="text-end">+$<?php echo number_format($rental['tax'], 2); ?></td></tr>
-                        <tr class="fw-bold table-light"><td>Total</td><td class="text-end">$<?php echo number_format($rental['total'], 2); ?></td></tr>
-                        <tr><td class="text-muted">Advance</td><td class="text-end text-success">$<?php echo number_format($rental['advance'], 2); ?></td></tr>
-                        <tr class="fw-bold table-warning"><td>Balance</td><td class="text-end">$<?php echo number_format(max(0, $rental['total'] - $rental['advance']), 2); ?></td></tr>
+                        <tr class="fw-bold table-light"><td>Base Total</td><td class="text-end">$<?php echo number_format($rental['total'], 2); ?></td></tr>
+                        <?php if ($return_charges > 0): ?>
+                        <tr><td class="text-muted">Return Charges</td><td class="text-end text-danger">+$<?php echo number_format($return_charges, 2); ?></td></tr>
+                        <?php endif; ?>
+                        <tr class="fw-bold table-primary"><td>Grand Total</td><td class="text-end">$<?php echo number_format($total_rent_due, 2); ?></td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Payment Summary -->
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-bold py-3 d-flex justify-content-between align-items-center">
+                    <span>Payment Summary</span>
+                    <?php if ($balance_due_live > 0): ?>
+                        <a href="/car-rental/admin/payments/create.php?rental_id=<?php echo $rental_id; ?>"
+                           class="btn btn-sm btn-success">
+                            + Add Payment
+                        </a>
+                    <?php else: ?>
+                        <span class="badge bg-success">Fully Paid</span>
+                    <?php endif; ?>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <tr>
+                            <td class="ps-3 text-muted">Total Rent</td>
+                            <td class="text-end pe-3 fw-bold">$<?php echo number_format($total_rent_due, 2); ?></td>
+                        </tr>
+                        <tr>
+                            <td class="ps-3 text-muted">Total Paid</td>
+                            <td class="text-end pe-3 fw-bold text-success">$<?php echo number_format($total_paid_live, 2); ?></td>
+                        </tr>
+                        <tr class="<?php echo $balance_due_live > 0 ? 'table-danger' : 'table-success'; ?>">
+                            <td class="ps-3 fw-bold">Balance Due</td>
+                            <td class="text-end pe-3 fw-bold <?php echo $balance_due_live > 0 ? 'text-danger' : 'text-success'; ?>">
+                                $<?php echo number_format($balance_due_live, 2); ?>
+                            </td>
+                        </tr>
                     </table>
                 </div>
             </div>

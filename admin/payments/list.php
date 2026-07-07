@@ -1,12 +1,7 @@
 <?php
-session_start();
-require '../../config/db.php';
-
-// Security check
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['admin', 'staff'])) {
-    header("Location: ../../login.php");
-    exit;
-}
+require_once '../../includes/auth_check.php';
+require_staff_or_admin();
+require_once '../../config/db.php';
 
 // Filters
 $filter_method = $_GET['payment_method'] ?? '';

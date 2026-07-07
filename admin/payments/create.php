@@ -1,16 +1,12 @@
 <?php
-session_start();
-require '../../config/db.php';
+require_once '../../includes/auth_check.php';
+require_staff_or_admin();
+require_once '../../config/db.php';
 
-// Security check
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['admin', 'staff'])) {
-    header("Location: ../../login.php");
-    exit;
-}
-
-// Validate rental_id
+// Validate rental_id — show selection page if missing
 if (!isset($_GET['rental_id']) || !is_numeric($_GET['rental_id'])) {
-    header("Location: list.php");
+    // No rental_id: redirect to rentals list so user picks one
+    header("Location: /car-rental/admin/rentals/index.php?info=pick_rental");
     exit;
 }
 
@@ -78,15 +74,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             VALUES (?, ?, ?, ?, ?, ?)
         ");
         $ins->bind_param("idssss", $rental_id, $amount, $payment_method, $transaction_id, $payment_type, $note);
-        
+
         if ($ins->execute()) {
+            $new_id = $conn->insert_id; // Capture BEFORE close()
             $ins->close();
-            
-            // Redirect to the view page of the payment or list with success
-            header("Location: view.php?id=" . $conn->insert_id . "&success=true");
+
+            // Recalculate due after insert to refresh display if stayed
+            header("Location: view.php?id=" . $new_id . "&success=true");
             exit;
         } else {
             $error = "Error recording payment: " . $conn->error;
+            $ins->close();
         }
     }
 }

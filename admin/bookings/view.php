@@ -51,11 +51,11 @@ $stmt->close();
 
 // Fetch payments for this booking
 $pay_res = $conn->prepare("
-    SELECT p.*, u.name AS received_by_name
+    SELECT p.*
     FROM payments p
-    LEFT JOIN users u ON p.received_by = u.id
-    WHERE p.booking_id = ?
-    ORDER BY p.payment_date ASC
+    JOIN rentals r ON p.rental_id = r.id
+    WHERE r.booking_id = ?
+    ORDER BY p.created_at ASC
 ");
 $pay_res->bind_param("i", $booking_id);
 $pay_res->execute();
@@ -221,7 +221,7 @@ $badge_class = $status_badges[$bk['status']] ?? 'bg-secondary';
                             <tbody>
                                 <?php while ($p = $payments->fetch_assoc()): ?>
                                     <tr>
-                                        <td><?php echo date('M d', strtotime($p['payment_date'])); ?></td>
+                                        <td><?php echo date('M d', strtotime($p['created_at'])); ?></td>
                                         <td><span class="badge bg-secondary"><?php echo ucfirst($p['payment_type']); ?></span></td>
                                         <td class="text-end">$<?php echo number_format($p['amount'], 2); ?></td>
                                     </tr>
