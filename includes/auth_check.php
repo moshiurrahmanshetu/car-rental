@@ -14,22 +14,59 @@ function check_auth() {
     }
 }
 
+/**
+ * Require admin role. Returns a proper 403 page if unauthorized.
+ */
 function require_admin() {
     check_auth();
-    // Normalize role checked ('admin' vs $_SESSION['user_role'])
     $role = $_SESSION['user_role'] ?? $_SESSION['role'] ?? '';
     if ($role !== 'admin') {
         http_response_code(403);
-        die("Access denied: Admin privileges required.");
+        include_once __DIR__ . '/403.php';
+        exit;
     }
 }
 
+/**
+ * Require staff or admin role. Returns a proper 403 page if unauthorized.
+ */
 function require_staff_or_admin() {
     check_auth();
     $role = $_SESSION['user_role'] ?? $_SESSION['role'] ?? '';
     if (!in_array($role, ['admin', 'staff'])) {
         http_response_code(403);
-        die("Access denied: Unauthorized role.");
+        include_once __DIR__ . '/403.php';
+        exit;
     }
+}
+
+/**
+ * Get the current user's role (normalized).
+ */
+function get_role() {
+    return $_SESSION['user_role'] ?? $_SESSION['role'] ?? '';
+}
+
+/**
+ * Returns true if the current user is admin.
+ */
+function is_admin() {
+    return get_role() === 'admin';
+}
+
+/**
+ * Returns true if the current user is staff.
+ */
+function is_staff() {
+    return get_role() === 'staff';
+}
+
+/**
+ * Get the dashboard URL for the current role.
+ */
+function dashboard_url() {
+    return is_admin()
+        ? '/car-rental/admin/dashboard.php'
+        : '/car-rental/staff/dashboard.php';
 }
 ?>

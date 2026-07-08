@@ -8,7 +8,7 @@ if (isset($_SESSION['user_id'])) {
     if ($role === 'admin') {
         header("Location: ../admin/dashboard.php");
     } else {
-        header("Location: ../user/dashboard.php");
+        header("Location: ../staff/dashboard.php");
     }
     exit;
 }
@@ -43,7 +43,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         if ($user['role'] === 'admin') {
                             header("Location: ../admin/dashboard.php");
                         } else {
-                            header("Location: ../user/dashboard.php");
+                            // staff and all other roles go to staff dashboard
+                            header("Location: ../staff/dashboard.php");
                         }
                         exit;
                     } else {

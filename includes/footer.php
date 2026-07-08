@@ -17,39 +17,53 @@
     <!-- Custom Layout JS -->
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            // Sidebar Toggle (Mobile & Desktop)
+            // ── Sidebar Toggle ──────────────────────────────────────
             const sidebarToggle = document.getElementById('sidebarToggle');
             if (sidebarToggle) {
                 sidebarToggle.addEventListener('click', () => {
-                    // For mobile
-                    document.body.classList.toggle('sidebar-open');
-                    // For desktop
-                    document.body.classList.toggle('sidebar-collapsed');
+                    if (window.innerWidth >= 992) {
+                        // Desktop: collapse sidebar + persist state
+                        document.body.classList.toggle('sidebar-collapsed');
+                        localStorage.setItem(
+                            'sidebarCollapsed',
+                            document.body.classList.contains('sidebar-collapsed')
+                        );
+                    } else {
+                        // Mobile: slide-in overlay
+                        document.body.classList.toggle('sidebar-open');
+                    }
+                });
+
+                // Close mobile sidebar when clicking outside
+                document.addEventListener('click', (e) => {
+                    const sidebar = document.getElementById('sidebar');
+                    if (window.innerWidth < 992 &&
+                        document.body.classList.contains('sidebar-open') &&
+                        sidebar && !sidebar.contains(e.target) &&
+                        e.target !== sidebarToggle && !sidebarToggle.contains(e.target)) {
+                        document.body.classList.remove('sidebar-open');
+                    }
                 });
             }
 
-            // Dark Mode Toggle
+            // ── Dark Mode Toggle ────────────────────────────────────
             const darkModeToggle = document.getElementById('darkModeToggle');
             if (darkModeToggle) {
                 const updateIcon = () => {
-                    if (document.body.classList.contains('dark-mode')) {
-                        darkModeToggle.innerHTML = '<i class="fa-regular fa-sun"></i>';
-                    } else {
-                        darkModeToggle.innerHTML = '<i class="fa-solid fa-moon"></i>';
-                    }
+                    darkModeToggle.innerHTML = document.body.classList.contains('dark-mode')
+                        ? '<i class="fa-regular fa-sun"></i>'
+                        : '<i class="fa-solid fa-moon"></i>';
                 };
-                
+
                 updateIcon();
 
                 darkModeToggle.addEventListener('click', () => {
                     document.body.classList.toggle('dark-mode');
                     updateIcon();
-                    
-                    if (document.body.classList.contains('dark-mode')) {
-                        localStorage.setItem('theme', 'dark');
-                    } else {
-                        localStorage.setItem('theme', 'light');
-                    }
+                    localStorage.setItem(
+                        'theme',
+                        document.body.classList.contains('dark-mode') ? 'dark' : 'light'
+                    );
                 });
             }
         });
